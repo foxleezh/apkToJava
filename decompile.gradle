@@ -1,0 +1,124 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+buildscript {
+    repositories {
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.3'
+    }
+}
+
+
+ext {
+    BUILD_TOOLS_VERSION = '25.0.0'
+    TARGET_SDK_VERSION = 25
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    // 从系统环境变量中或者local.properties配置文件中读取SDK位置
+    if (System.getenv("ANDROID_HOME") != null) {
+        sdkDir = System.getenv("ANDROID_HOME")
+    } else { // 在local.properties中定义
+        sdkDir = properties.getProperty('sdk.dir')
+    }
+    sdk = [:]
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        sdk.aapt = "$sdkDir\\build-tools\\$BUILD_TOOLS_VERSION\\aapt.exe"
+        sdk.zip = "$rootDir\\tools\\7za\\7za.exe"
+        sdk.jadx = "$rootDir\\tools\\jadx\\bin\\jadx.bat"
+    } else if (Os.isFamily(Os.FAMILY_MAC)) {
+        sdk.aapt = "$sdkDir/build-tools/$BUILD_TOOLS_VERSION/aapt"
+        sdk.zip = "$rootDir/tools/7za/7za"
+        sdk.jadx = "$rootDir/tools/jadx/bin/jadx"
+    } else if (Os.isFamily(Os.FAMILY_UNIX)) {
+        sdk.aapt = "$sdkDir/build-tools/$BUILD_TOOLS_VERSION/aapt"
+        sdk.zip = "$rootDir/tools/7za/7za_linux"
+        sdk.jadx = "$rootDir/tools/jadx/bin/jadx"
+        sdk.apktool = "$rootDir/tools/apktool/apktool"
+    }
+    sdk.androidJar = "$sdkDir/platforms/android-$TARGET_SDK_VERSION/android.jar"
+    if (TARGET_SDK_VERSION >= 23) {
+        sdk.apacheJar = "$sdkDir/platforms/android-23/optional/org.apache.http.legacy.jar";
+    }
+}
+
+//清除
+task clearBuild(type: Delete) {
+    delete buildDir
+    delete "$rootDir/app/build"
+    delete "$rootDir/app/libs"
+    delete "$rootDir/app/src"
+}
+
+//解压apk
+task unzip(type:Exec, dependsOn: 'clearBuild'){
+    executable sdk.zip
+    def argv = []
+    argv << 'x'
+    argv << '-y'
+    argv << "$rootDir/apk/input.apk"
+    argv << "-o$rootDir/temp/tmp_apk"
+    args = argv
+}
+
+//用jadx反编译dex为java
+task jadx(type: Copy, dependsOn: 'unzip'){
+
+    from "$rootDir/temp/tmp_apk"
+    into "$rootDir/temp/dex"
+    include '*.dex'
+
+    def argv = []
+
+    doLast {
+        File file=new File("$rootDir/temp/dex/")
+        String[] list = file.list()
+        def size=list.size()
+        for (int i = 0; i < size; i++) {
+            project.exec {
+                executable sdk.jadx
+                argv = []
+                argv << '-d'
+                argv << 'app/src/main/java'
+                argv << "$rootDir/temp/dex/"+list[i]
+                args = argv
+            }
+            System.out.println(list[i])
+        }
+        project.delete "$rootDir/temp"
+    }
+}
+
+
+//用apktool反编译apk得到res assets manifest
+task decompileApk(type: Exec, dependsOn: 'jadx') {
+    executable sdk.apktool
+    def argv = []
+    argv << 'd'
+    argv << "$rootDir/apk/input.apk"
+    argv << '-o'
+    argv << "$rootDir/temp/tmp_apk"
+    args = argv
+
+    doLast {
+        project.copy {
+            from "$rootDir/temp/tmp_apk/assets"
+            into "$rootDir/app/src/main/assets"
+        }
+        project.copy {
+            from "$rootDir/temp/tmp_apk/lib"
+            into "$rootDir/app/libs"
+        }
+        project.copy {
+            from "$rootDir/temp/tmp_apk/res"
+            into "$rootDir/app/src/main/res"
+        }
+        project.copy {
+            from "$rootDir/temp/tmp_apk/"
+            into "$rootDir/app/src/main/"
+            include 'AndroidManifest.xml'
+        }
+        project.delete "$rootDir/temp"
+    }
+}
