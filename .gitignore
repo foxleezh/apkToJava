@@ -7,3 +7,7 @@
 /captures
 .externalNativeBuild
 /apk/
+/app/src/
+/app/libs/
+/smali/
+/temp/

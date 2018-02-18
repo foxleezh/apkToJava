@@ -1,4 +1,5 @@
 import org.apache.tools.ant.taskdefs.condition.Os
+
 buildscript {
     repositories {
         maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
@@ -45,14 +46,15 @@ ext {
 
 //清除
 task clearBuild(type: Delete) {
-    delete buildDir
     delete "$rootDir/app/build"
     delete "$rootDir/app/libs"
     delete "$rootDir/app/src"
+    delete "$rootDir/smali/build"
+    delete "$rootDir/smali/src"
 }
 
 //解压apk
-task unzip(type:Exec, dependsOn: 'clearBuild'){
+task unzip(type: Exec, dependsOn: 'clearBuild') {
     executable sdk.zip
     def argv = []
     argv << 'x'
@@ -60,28 +62,33 @@ task unzip(type:Exec, dependsOn: 'clearBuild'){
     argv << "$rootDir/apk/input.apk"
     argv << "-o$rootDir/temp/tmp_apk"
     args = argv
+
+    doLast {
+        project.copy {
+            from "$rootDir/temp/tmp_apk"
+            into "$rootDir/temp/dex"
+            include '*.dex'
+        }
+    }
 }
 
 //用jadx反编译dex为java
-task jadx(type: Copy, dependsOn: 'unzip'){
+task jadx(type: Delete, dependsOn: 'unzip') {
 
-    from "$rootDir/temp/tmp_apk"
-    into "$rootDir/temp/dex"
-    include '*.dex'
-
+    //避免UP-TO-DATE,随便删除下
+    delete "$rootDir/abc"
     def argv = []
-
     doLast {
-        File file=new File("$rootDir/temp/dex/")
+        File file = new File("$rootDir/temp/dex/")
         String[] list = file.list()
-        def size=list.size()
+        def size = list.size()
         for (int i = 0; i < size; i++) {
             project.exec {
                 executable sdk.jadx
                 argv = []
                 argv << '-d'
                 argv << 'app/src/main/java'
-                argv << "$rootDir/temp/dex/"+list[i]
+                argv << "$rootDir/temp/dex/" + list[i]
                 args = argv
             }
             System.out.println(list[i])
@@ -90,8 +97,7 @@ task jadx(type: Copy, dependsOn: 'unzip'){
     }
 }
 
-
-//用apktool反编译apk得到res assets manifest
+//用apktool反编译apk得到res assets libs manifest
 task decompileApk(type: Exec, dependsOn: 'jadx') {
     executable sdk.apktool
     def argv = []
@@ -119,6 +125,19 @@ task decompileApk(type: Exec, dependsOn: 'jadx') {
             into "$rootDir/app/src/main/"
             include 'AndroidManifest.xml'
         }
+
+        File file = new File("$rootDir/temp/tmp_apk/")
+        String[] list = file.list()
+        def size = list.size()
+        for (int i = 0; i < size; i++) {
+            if (list[i].startsWith('smali')) {
+                project.copy {
+                    from "$rootDir/temp/tmp_apk/"+list[i]
+                    into "$rootDir/smali/src/main/java"
+                }
+            }
+        }
+
         project.delete "$rootDir/temp"
     }
 }
