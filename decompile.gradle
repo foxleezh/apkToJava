@@ -28,15 +28,17 @@ ext {
         sdk.aapt = "$sdkDir\\build-tools\\$BUILD_TOOLS_VERSION\\aapt.exe"
         sdk.zip = "$rootDir\\tools\\7za\\7za.exe"
         sdk.jadx = "$rootDir\\tools\\jadx\\bin\\jadx.bat"
+        sdk.apktool = "$rootDir\\tools\\apktool\\apktool.bat"
     } else if (Os.isFamily(Os.FAMILY_MAC)) {
         sdk.aapt = "$sdkDir/build-tools/$BUILD_TOOLS_VERSION/aapt"
         sdk.zip = "$rootDir/tools/7za/7za"
         sdk.jadx = "$rootDir/tools/jadx/bin/jadx"
+        sdk.apktool = "$rootDir/tools/apktool/apktool"
     } else if (Os.isFamily(Os.FAMILY_UNIX)) {
         sdk.aapt = "$sdkDir/build-tools/$BUILD_TOOLS_VERSION/aapt"
         sdk.zip = "$rootDir/tools/7za/7za_linux"
         sdk.jadx = "$rootDir/tools/jadx/bin/jadx"
-        sdk.apktool = "$rootDir/tools/apktool/apktool"
+        sdk.apktool = "$rootDir/tools/apktool/apktool_linux"
     }
     sdk.androidJar = "$sdkDir/platforms/android-$TARGET_SDK_VERSION/android.jar"
     if (TARGET_SDK_VERSION >= 23) {
