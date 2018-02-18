@@ -1,0 +1,1 @@
+请将apk重命名为input.apk放的apk目录下
