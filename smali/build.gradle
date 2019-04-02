@@ -26,6 +26,12 @@ android {
         versionName "1.0.0"
     }
 
+    sourceSets{
+        main{
+            manifest.srcFile '../AndroidManifest.xml'
+        }
+    }
+
     lintOptions {
         abortOnError false
     }

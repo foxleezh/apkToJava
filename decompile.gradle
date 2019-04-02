@@ -2,19 +2,20 @@ import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
     repositories {
+        google()
         maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
         jcenter()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.3'
+        classpath 'com.android.tools.build:gradle:3.1.3'
     }
 }
 
 
 ext {
-    BUILD_TOOLS_VERSION = '25.0.0'
-    TARGET_SDK_VERSION = 25
+    BUILD_TOOLS_VERSION = '27.0.3'
+    TARGET_SDK_VERSION = 27
     Properties properties = new Properties()
     properties.load(project.rootProject.file('local.properties').newDataInputStream())
     // 从系统环境变量中或者local.properties配置文件中读取SDK位置
@@ -75,7 +76,7 @@ task unzip(type: Exec, dependsOn: 'clearBuild') {
 }
 
 //用jadx反编译dex为java
-task jadx(type: Delete, dependsOn: 'unzip') {
+task jadx(type: Delete) {
 
     //避免UP-TO-DATE,随便删除下
     delete "$rootDir/abc"
