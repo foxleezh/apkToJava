@@ -76,7 +76,7 @@ task unzip(type: Exec, dependsOn: 'clearBuild') {
 }
 
 //用jadx反编译dex为java
-task jadx(type: Delete) {
+task jadx(type: Delete, dependsOn: 'unzip') {
 
     //避免UP-TO-DATE,随便删除下
     delete "$rootDir/abc"
@@ -143,4 +143,46 @@ task decompileApk(type: Exec, dependsOn: 'jadx') {
 
         project.delete "$rootDir/temp"
     }
+}
+
+
+// 直接反编译 Dex 为 Java 和 Smali
+task decompileDex(type: Delete) {
+
+    //避免UP-TO-DATE,随便删除下
+    delete "$rootDir/abc"
+    def argv = []
+    doLast {
+        File file = new File("$rootDir/temp/dex/")
+        String[] list = file.list()
+        def size = list.size()
+        for (int i = 0; i < size; i++) {
+            project.exec {
+                executable sdk.jadx
+                argv = []
+                argv << '-d'
+                argv << 'app/src/main/java'
+                argv << "$rootDir/temp/dex/" + list[i]
+                args = argv
+            }
+            project.exec {
+                executable "java"
+                argv = []
+                argv << '-jar'
+                argv << "$rootDir/tools/smali/lib/baksmali-2.3.4.jar"
+                argv << 'd'
+                argv << "$rootDir/temp/dex/" + list[i]
+                args = argv
+            }
+            System.out.println(list[i])
+        }
+
+        project.copy {
+            from "$rootDir/out/"
+            into "$rootDir/smali/src/main/java"
+        }
+
+        project.delete "$rootDir/out"
+    }
+
 }
