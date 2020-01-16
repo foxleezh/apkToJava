@@ -1,21 +1,6 @@
 apply plugin: 'com.android.application'
 
 
-buildscript {
-    repositories {
-        google()
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.3'
-    }
-}
-
-repositories {
-    google()
-    jcenter()
-}
-
 android {
     compileSdkVersion 27
     buildToolsVersion '27.0.3'
@@ -36,8 +21,4 @@ android {
     lintOptions {
         abortOnError false
     }
-}
-
-dependencies {
-    // some dependencies
 }
