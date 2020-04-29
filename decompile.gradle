@@ -90,11 +90,15 @@ task jadx(type: Delete, dependsOn: 'unzip') {
                 executable sdk.jadx
                 argv = []
                 argv << '-d'
-                argv << 'app/src/main/java'
+                argv << 'temp/jadx'
                 argv << "$rootDir/temp/dex/" + list[i]
                 args = argv
             }
             System.out.println(list[i])
+        }
+        project.copy {
+            from "$rootDir/temp/jadx/sources"
+            into "$rootDir/app/src/main/java"
         }
         project.delete "$rootDir/temp"
     }
@@ -174,7 +178,7 @@ task decompileDex(type: Delete) {
                 argv << "$rootDir/temp/dex/" + list[i]
                 args = argv
             }
-            System.out.println(list[i])
+            System.out.println("开始反编译"+list[i])
         }
 
         project.copy {
